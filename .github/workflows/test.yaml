@@ -1,0 +1,31 @@
+name: test
+on:
+  push:
+    branches:
+    - "**"
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - ubuntu-latest
+        - macOS-latest
+        - windows-latest
+    steps:
+    - name: Set git to use LF
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+      if: "matrix.os == 'windows-latest'"
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: setup go
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+    - name: test
+      run: go test -race -coverprofile coverage.out -covermode atomic ./...
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
