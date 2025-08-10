@@ -1,0 +1,11 @@
+cache: 1h
+commands:
+- lang: go
+  run: 'go run testdata/stub_image_generator.go -l "{{lang}}" -o "{{output}}" "{{input}}"'
+  ext: png
+- lang: '*'
+  run: 'go run testdata/stub_image_generator.go -o "{{output}}"'
+  ext: jpg
+- lang: ''
+  run: 'go run testdata/stub_image_generator.go -o "{{output}}"'
+  ext: png
