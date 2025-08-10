@@ -262,7 +262,7 @@ func TestRun_ImageGeneration(t *testing.T) {
 
 			// Set environment variable if specified
 			if tt.envLang != "" {
-				cleanupEnv := setupEnvVar("CODE_LANG", tt.envLang)
+				cleanupEnv := setupEnvVar("CODEBLOCK_LANG", tt.envLang)
 				defer cleanupEnv()
 			}
 

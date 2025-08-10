@@ -6,7 +6,7 @@
 - 標準入力から文字列を読み取り、それを画像変換した結果を標準出力に出力します
     - 入力
         - コード文字列: 標準入力
-        - コードの言語(ex. QRコード、Mermaid、その他のプログラミング言語) : `CODE_LANG` 環境変数 or `--lang` flag (Optional)
+        - コードの言語(ex. QRコード、Mermaid、その他のプログラミング言語) : `CODEBLOCK_LANG` 環境変数 or `--lang` flag (Optional)
     - 出力
         - 生成された画像: 標準出力
 - langの値に応じた画像生成コマンドを実行します
