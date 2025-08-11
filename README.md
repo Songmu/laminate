@@ -165,6 +165,22 @@ For language `python`: matches the 2nd command (`{py,python}`) and stops there.
 > [!TIP]
 > Put more specific patterns at the top and general patterns (like `*`) at the bottom to ensure proper matching priority.
 
+## Environment Variables
+
+- `CODEBLOCK_LANG`: Default language when `--lang` is not specified
+
+## Cache Management
+
+Cache files are stored in `~/.cache/laminate/cache/` and keyed by input content + language + format.
+
+```yaml
+# Set cache duration
+cache: 2h
+
+# Disable caching (omit cache field)
+# cache: 0s
+```
+
 ## Usage Examples
 
 ### Template Variable Behaviors
@@ -247,26 +263,6 @@ graph TD
 EOF
 ```
 
-### Language Priority
-
-- `--lang` flag > `CODEBLOCK_LANG` environment variable > empty string
-- Pattern matching is first-match-wins from top to bottom in config
-
-## Cache Management
-
-Cache files are stored in `~/.cache/laminate/cache/` and keyed by input content + language + format.
-
-```yaml
-# Set cache duration
-cache: 2h
-
-# Disable caching (omit cache field)
-# cache: 0s
-```
-
-## Environment Variables
-
-- `CODEBLOCK_LANG`: Default language when `--lang` is not specified
 
 ## Author
 
