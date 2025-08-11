@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/k1LoW/exec"
@@ -19,116 +20,81 @@ type Executor struct {
 	output string
 }
 
-// NewExecutor creates a new executor
-func NewExecutor(cmd *Command, lang, input, output string) *Executor {
-	return &Executor{
-		cmd:    cmd,
-		lang:   lang,
-		input:  input,
-		output: output,
-	}
-}
-
 // Execute runs the command and returns the output
 func (e *Executor) Execute(ctx context.Context) ([]byte, error) {
-	vars := PrepareVariables(e.input, e.output, e.lang)
-
-	if e.cmd.Run.IsArray() {
-		return e.executeArray(ctx, e.cmd.Run.Array(), vars)
+	argv, err := e.getArgv()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get command arguments: %w", err)
 	}
-	return e.executeString(ctx, e.cmd.Run.String(), vars)
+	return e.exceute(ctx, argv)
 }
 
-// executeString executes a string command
-func (e *Executor) executeString(ctx context.Context, cmdStr string, vars map[string]string) ([]byte, error) {
-	expanded, err := ExpandTemplate(cmdStr, vars)
+func (e *Executor) getArgv() ([]string, error) {
+	vars := map[string]string{
+		"input":  e.input,
+		"output": e.output,
+		"lang":   e.lang,
+	}
+	if e.cmd.Run.IsArray() {
+		templates := e.cmd.Run.Array()
+		var result = make([]string, len(templates))
+		for i, template := range templates {
+			expanded, err := ExpandTemplate(template, vars)
+			if err != nil {
+				return nil, err
+			}
+			result[i] = expanded
+		}
+		return result, nil
+	}
+	expanded, err := ExpandTemplate(e.cmd.Run.String(), vars)
 	if err != nil {
 		return nil, err
 	}
-
 	shell := e.cmd.GetShell()
+	return []string{shell, "-c", expanded}, nil
+}
 
-	// Create command with shell
-	cmd := exec.CommandContext(ctx, shell, "-c", expanded)
-
-	// Set up stdin if {{input}} is not in the command
-	if !HasVariable(cmdStr, "input") {
-		cmd.Stdin = strings.NewReader(e.input)
+func (e *Executor) exceute(ctx context.Context, argv []string) ([]byte, error) {
+	var rawCmd = e.cmd.Run.Array()
+	if !e.cmd.Run.IsArray() {
+		rawCmd = []string{e.cmd.Run.String()}
 	}
 
+	hasInput := slices.ContainsFunc(rawCmd, func(arg string) bool {
+		return HasVariable(arg, "input")
+	})
+	hasOutput := slices.ContainsFunc(rawCmd, func(arg string) bool {
+		return HasVariable(arg, "output")
+	})
+
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Stderr = os.Stderr
+
+	// Set up stdin if {{input}} is not in the command
+	if !hasInput {
+		cmd.Stdin = strings.NewReader(e.input)
+	}
 	// Set up output handling
 	var outputBuffer bytes.Buffer
-	if !HasVariable(cmdStr, "output") {
+	if !hasOutput {
 		// Command will output to stdout
 		cmd.Stdout = &outputBuffer
 	} else {
 		// Command will write to file, we need to read it after
-		cmd.Stdout = os.Stdout // For debugging
+		cmd.Stdout = os.Stdout
 	}
-
-	var errBuffer bytes.Buffer
-	cmd.Stderr = &errBuffer
-
-	// Run the command
 	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("command failed: %w\nstderr: %s", err, errBuffer.String())
+		return nil, fmt.Errorf("command failed: %w", err)
 	}
 
 	// Get the output
-	if !HasVariable(cmdStr, "output") {
+	if !hasOutput {
 		// Output was written to stdout
 		return outputBuffer.Bytes(), nil
-	} else {
-		// Output was written to file, read it
-		return os.ReadFile(e.output)
 	}
-}
-
-// executeArray executes an array command
-func (e *Executor) executeArray(ctx context.Context, cmdArray []string, vars map[string]string) ([]byte, error) {
-	expanded, err := ExpandTemplateArray(cmdArray, vars)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(expanded) == 0 {
-		return nil, fmt.Errorf("empty command array")
-	}
-
-	// Create command
-	cmd := exec.CommandContext(ctx, expanded[0], expanded[1:]...)
-
-	// Set up stdin if {{input}} is not in the command
-	if !HasVariableInArray(cmdArray, "input") {
-		cmd.Stdin = strings.NewReader(e.input)
-	}
-
-	// Set up output handling
-	var outputBuffer bytes.Buffer
-	if !HasVariableInArray(cmdArray, "output") {
-		// Command will output to stdout
-		cmd.Stdout = &outputBuffer
-	} else {
-		// Command will write to file
-		cmd.Stdout = os.Stdout // For debugging
-	}
-
-	var errBuffer bytes.Buffer
-	cmd.Stderr = &errBuffer
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("command failed: %w\nstderr: %s", err, errBuffer.String())
-	}
-
-	// Get the output
-	if !HasVariableInArray(cmdArray, "output") {
-		// Output was written to stdout
-		return outputBuffer.Bytes(), nil
-	} else {
-		// Output was written to file, read it
-		return os.ReadFile(e.output)
-	}
+	// Output was written to file, read it
+	return os.ReadFile(e.output)
 }
 
 // createTempFile creates a temporary file for output
@@ -148,7 +114,6 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 	if err != nil {
 		return err
 	}
-
 	ext := cmd.GetExt()
 
 	// Parse cache duration
@@ -162,7 +127,8 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 
 	// Try to get from cache
 	if data, found := cache.Get(lang, input, ext); found {
-		return copyToWriter(output, data)
+		_, err := output.Write(data)
+		return err
 	}
 
 	// Create temporary output file
@@ -172,8 +138,12 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 	}
 	defer os.Remove(outputPath)
 
-	// Execute command
-	executor := NewExecutor(cmd, lang, input, outputPath)
+	executor := &Executor{
+		cmd:    cmd,
+		lang:   lang,
+		input:  input,
+		output: outputPath,
+	}
 	data, err := executor.Execute(ctx)
 	if err != nil {
 		return err
@@ -185,6 +155,6 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 		fmt.Fprintf(os.Stderr, "Warning: failed to cache result: %v\n", cacheErr)
 	}
 
-	// Write to output
-	return copyToWriter(output, data)
+	_, err = output.Write(data)
+	return err
 }

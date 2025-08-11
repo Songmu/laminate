@@ -3,7 +3,6 @@ package laminate
 import (
 	"crypto/md5"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -108,11 +107,5 @@ func (c *Cache) Clean() error {
 		return nil
 	})
 
-	return err
-}
-
-// copyToWriter copies data to writer
-func copyToWriter(w io.Writer, data []byte) error {
-	_, err := w.Write(data)
 	return err
 }
