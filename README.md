@@ -41,7 +41,7 @@ cat script.py | laminate > python_code.png
 echo "Hello World" | laminate --lang unknown > text.png
 
 # Integration with k1LoW/deck for slide generation
-deck apply -c laminate deck.md
+deck apply -c laminate deck.md  # deck sets CODEBLOCK_LANG automatically
 ```
 
 > [!TIP]
@@ -167,7 +167,7 @@ For language `python`: matches the 2nd command (`{py,python}`) and stops there.
 
 ## Environment Variables
 
-- `CODEBLOCK_LANG`: Default language when `--lang` is not specified
+- `CODEBLOCK_LANG`: Language specification via environment variable (automatically set by [k1LoW/deck](https://github.com/k1LoW/deck))
 
 ## Cache Management
 
@@ -243,7 +243,7 @@ echo "https://example.com" | laminate --lang qr > qr.png
 
 #### Code Syntax Highlighting
 ```bash
-# Using --lang flag
+# Using --lang flag (highest priority)
 cat main.go | laminate --lang go > code.png
 
 # Using environment variable
@@ -253,6 +253,9 @@ cat script.py | laminate > highlighted.png
 # Empty language (uses first matching pattern)
 cat README.md | laminate --lang "" > readme.png
 ```
+
+> [!NOTE]
+> Priority: `--lang` flag > `CODEBLOCK_LANG` environment variable > empty string
 
 #### Mermaid Diagrams
 ```bash
