@@ -88,7 +88,6 @@ func (e *Executor) exceute(ctx context.Context, argv []string) ([]byte, error) {
 		return nil, fmt.Errorf("command failed: %w", err)
 	}
 
-	// Get the output
 	if !hasOutput {
 		// Output was written to stdout
 		return outputBuffer.Bytes(), nil
@@ -109,29 +108,23 @@ func createTempFile(ext string) (string, error) {
 
 // ExecuteWithCache executes a command with caching support
 func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, output io.Writer) error {
-	// Find matching command
 	cmd, err := FindMatchingCommand(config.Commands, lang)
 	if err != nil {
 		return err
 	}
 	ext := cmd.GetExt()
 
-	// Parse cache duration
 	duration, err := config.ParseDuration()
 	if err != nil {
 		return fmt.Errorf("failed to parse cache duration: %w", err)
 	}
 
-	// Create cache instance
 	cache := NewCache(duration)
-
-	// Try to get from cache
 	if data, found := cache.Get(lang, input, ext); found {
 		_, err := output.Write(data)
 		return err
 	}
 
-	// Create temporary output file
 	outputPath, err := createTempFile("." + ext)
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %w", err)
@@ -149,12 +142,10 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 		return err
 	}
 
-	// Store in cache
 	if cacheErr := cache.Set(lang, input, ext, data); cacheErr != nil {
 		// Log cache error but don't fail the operation
 		fmt.Fprintf(os.Stderr, "Warning: failed to cache result: %v\n", cacheErr)
 	}
-
 	_, err = output.Write(data)
 	return err
 }

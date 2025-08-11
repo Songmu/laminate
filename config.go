@@ -90,7 +90,6 @@ func (cmd *Command) GetShell() string {
 	if cmd.Shell != "" {
 		return cmd.Shell
 	}
-	// Check if bash exists using which command
 	if path, err := exec.LookPath("bash"); err == nil {
 		return path
 	}
