@@ -116,27 +116,26 @@ commands:
   - **`ext`**: Output file extension (default: `png`)
   - **`shell`**: Shell to use for string commands (default: `bash` or `sh`)
 
-### Command Execution Behavior
-
-The presence or absence of template variables in the `run` command determines how input and output are handled:
-
-| `{{input}}` | `{{output}}` | Input Method | Output Method | Example |
-|-------------|--------------|--------------|---------------|---------|
-| ✅ Present  | ✅ Present   | Command argument | File → stdout | `qrencode -o "{{output}}" "{{input}}"` |
-| ❌ Absent   | ✅ Present   | Stdin | File → stdout | `mmdc -i - -o "{{output}}"` |
-| ✅ Present  | ❌ Absent    | Command argument | Command stdout | `convert label:"{{input}}" png:-` |
-| ❌ Absent   | ❌ Absent    | Stdin | Command stdout | `some-converter` |
-
 ### Template Variables
 
+You can use these variables in your commands as needed. The presence or absence of `{{input}}` and `{{output}}` determines how laminate handles I/O with the external command.
+
 - **`{{input}}`**: Input text from stdin
-  - If this variable is present in the command, the input text will be passed as a command-line argument
-  - If this variable is NOT present, the input text will be passed via stdin to the command
-- **`{{output}}`**: Output file path (with appropriate extension)
-  - If this variable is present, the command should write the image to this file path
-  - If this variable is NOT present, the command should write the image data to stdout
-  - The file extension is determined by the `ext` field (defaults to `png`)
-- **`{{lang}}`**: Specified language parameter
+  - Present: Input passed as command-line argument
+  - Absent: Input passed via stdin to the command
+- **`{{output}}`**: Output file path with extension from `ext` field (default: `png`)
+  - Present: Command writes to this file, laminate reads it
+  - Absent: Command writes to stdout, laminate captures it
+- **`{{lang}}`**: The language parameter specified by user
+
+**I/O Behavior Examples:**
+
+| Variables Used | Example Command | How it works |
+|---------------|-----------------|--------------|
+| Both | `qrencode -o "{{output}}" "{{input}}"` | Input as arg, output to file |
+| Output only | `mmdc -i - -o "{{output}}"` | Input via stdin, output to file |
+| Input only | `convert label:"{{input}}" png:-` | Input as arg, output to stdout |
+| Neither | `some-converter` | Input via stdin, output to stdout |
 
 ### Language Matching
 
