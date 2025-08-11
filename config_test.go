@@ -123,115 +123,140 @@ func TestRunCommand_UnmarshalYAML_WithActualYAML(t *testing.T) {
 	}
 }
 
-func TestGetConfigPath_EnvOverride(t *testing.T) {
-	oldPath := os.Getenv("LAMINATE_CONFIG_PATH")
-	defer func() {
-		if oldPath != "" {
-			os.Setenv("LAMINATE_CONFIG_PATH", oldPath)
+func setupEnvVar(key, value string) func() {
+	oldValue := os.Getenv(key)
+	os.Setenv(key, value)
+	return func() {
+		if oldValue != "" {
+			os.Setenv(key, oldValue)
 		} else {
-			os.Unsetenv("LAMINATE_CONFIG_PATH")
+			os.Unsetenv(key)
 		}
-	}()
-
-	testPath := "/tmp/test-config.yaml"
-	os.Setenv("LAMINATE_CONFIG_PATH", testPath)
-
-	result := getConfigPath()
-	if result != testPath {
-		t.Errorf("Expected %s, got %s", testPath, result)
 	}
 }
 
-func TestGetCachePath_EnvOverride(t *testing.T) {
-	oldPath := os.Getenv("LAMINATE_CACHE_PATH")
-	defer func() {
-		if oldPath != "" {
-			os.Setenv("LAMINATE_CACHE_PATH", oldPath)
-		} else {
-			os.Unsetenv("LAMINATE_CACHE_PATH")
-		}
-	}()
+func TestPathOverride(t *testing.T) {
+	tests := []struct {
+		name     string
+		envVar   string
+		envValue string
+		getFunc  func() string
+	}{
+		{
+			name:     "config_path_override",
+			envVar:   "LAMINATE_CONFIG_PATH",
+			envValue: "/tmp/test-config.yaml",
+			getFunc:  getConfigPath,
+		},
+		{
+			name:     "cache_path_override",
+			envVar:   "LAMINATE_CACHE_PATH",
+			envValue: "/tmp/test-cache",
+			getFunc:  getCachePath,
+		},
+	}
 
-	testPath := "/tmp/test-cache"
-	os.Setenv("LAMINATE_CACHE_PATH", testPath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cleanup := setupEnvVar(tt.envVar, tt.envValue)
+			defer cleanup()
 
-	result := getCachePath()
-	if result != testPath {
-		t.Errorf("Expected %s, got %s", testPath, result)
+			result := tt.getFunc()
+			if result != tt.envValue {
+				t.Errorf("Expected %s, got %s", tt.envValue, result)
+			}
+		})
 	}
 }
 
-func TestLoadConfig_FileNotExists(t *testing.T) {
-	oldPath := os.Getenv("LAMINATE_CONFIG_PATH")
-	defer func() {
-		if oldPath != "" {
-			os.Setenv("LAMINATE_CONFIG_PATH", oldPath)
-		} else {
-			os.Unsetenv("LAMINATE_CONFIG_PATH")
-		}
-	}()
-
-	// Set non-existent file
-	os.Setenv("LAMINATE_CONFIG_PATH", "/non/existent/config.yaml")
-
-	config, err := LoadConfig()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
-
-	if config == nil {
-		t.Error("Expected empty config, got nil")
-	} else if len(config.Commands) != 0 {
-		t.Error("Expected empty commands")
-	}
-}
-
-func TestLoadConfig_ValidFile(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.yaml")
-
-	configContent := `cache: 1h
+func TestLoadConfig(t *testing.T) {
+	tests := []struct {
+		name           string
+		setupConfig    bool
+		configContent  string
+		expectedCache  string
+		expectedCmdLen int
+		expectedLang   string
+		expectedExt    string
+		expectError    bool
+	}{
+		{
+			name:           "file_not_exists",
+			setupConfig:    false,
+			expectedCmdLen: 0,
+			expectError:    false,
+		},
+		{
+			name:        "valid_file",
+			setupConfig: true,
+			configContent: `cache: 1h
 commands:
 - lang: test
   run: echo test
   ext: png
-`
-
-	err := os.WriteFile(configFile, []byte(configContent), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create test config: %v", err)
+`,
+			expectedCache:  "1h",
+			expectedCmdLen: 1,
+			expectedLang:   "test",
+			expectedExt:    "png",
+			expectError:    false,
+		},
 	}
 
-	oldPath := os.Getenv("LAMINATE_CONFIG_PATH")
-	defer func() {
-		if oldPath != "" {
-			os.Setenv("LAMINATE_CONFIG_PATH", oldPath)
-		} else {
-			os.Unsetenv("LAMINATE_CONFIG_PATH")
-		}
-	}()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var cleanup func()
 
-	os.Setenv("LAMINATE_CONFIG_PATH", configFile)
+			if tt.setupConfig {
+				tmpDir := t.TempDir()
+				configFile := filepath.Join(tmpDir, "config.yaml")
 
-	config, err := LoadConfig()
-	if err != nil {
-		t.Errorf("Unexpected error: %v", err)
-	}
+				err := os.WriteFile(configFile, []byte(tt.configContent), 0644)
+				if err != nil {
+					t.Fatalf("Failed to create test config: %v", err)
+				}
 
-	if config.Cache != "1h" {
-		t.Errorf("Expected cache '1h', got '%s'", config.Cache)
-	}
+				cleanup = setupEnvVar("LAMINATE_CONFIG_PATH", configFile)
+			} else {
+				cleanup = setupEnvVar("LAMINATE_CONFIG_PATH", "/non/existent/config.yaml")
+			}
+			defer cleanup()
 
-	if len(config.Commands) != 1 {
-		t.Errorf("Expected 1 command, got %d", len(config.Commands))
-	}
+			config, err := LoadConfig()
 
-	cmd := config.Commands[0]
-	if cmd.Lang != "test" {
-		t.Errorf("Expected lang 'test', got '%s'", cmd.Lang)
-	}
+			if tt.expectError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+				}
+				return
+			}
 
-	if cmd.GetExt() != "png" {
-		t.Errorf("Expected ext 'png', got '%s'", cmd.GetExt())
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+			}
+
+			if config == nil {
+				t.Error("Expected config, got nil")
+				return
+			}
+
+			if tt.expectedCache != "" && config.Cache != tt.expectedCache {
+				t.Errorf("Expected cache '%s', got '%s'", tt.expectedCache, config.Cache)
+			}
+
+			if len(config.Commands) != tt.expectedCmdLen {
+				t.Errorf("Expected %d commands, got %d", tt.expectedCmdLen, len(config.Commands))
+			}
+
+			if tt.expectedCmdLen > 0 {
+				cmd := config.Commands[0]
+				if cmd.Lang != tt.expectedLang {
+					t.Errorf("Expected lang '%s', got '%s'", tt.expectedLang, cmd.Lang)
+				}
+				if cmd.GetExt() != tt.expectedExt {
+					t.Errorf("Expected ext '%s', got '%s'", tt.expectedExt, cmd.GetExt())
+				}
+			}
+		})
 	}
 }
