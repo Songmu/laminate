@@ -72,6 +72,9 @@ apt-get install imagemagick    # Ubuntu/Debian
 
 ## Installation
 
+<details>
+<summary>Click to expand installation methods</summary>
+
 ```console
 # Install via Homebrew (macOS)
 % brew install songmu/tap/laminate
@@ -88,6 +91,8 @@ apt-get install imagemagick    # Ubuntu/Debian
 # go install
 % go install github.com/Songmu/laminate/cmd/laminate@latest
 ```
+
+</details>
 
 ## Configuration
 
