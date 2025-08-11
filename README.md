@@ -1,7 +1,7 @@
 laminate
 ========
 
-[![Test Status](https://github.com/Songmu/laminate/workflows/test/badge.svg?branch=main)][actions]
+[![Test Status](https://github.com/Songmu/laminate/workflows/test.yaml/badge.svg?branch=main)][actions]
 [![Coverage Status](https://codecov.io/gh/Songmu/laminate/branch/main/graph/badge.svg)][codecov]
 [![MIT License](https://img.shields.io/github/license/Songmu/laminate)][license]
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/Songmu/laminate)][PkgGoDev]
