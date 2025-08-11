@@ -104,7 +104,7 @@ properties:
 ## 設定ファイルやキャッシュの位置
 - XDG Base Directory に準じます
     - macであっても同様です
-        - これは、 `os.UserConfigDir(), `os.UserCacheDir()`等を「使わない」と言うことです
+        - これは、 `os.UserConfigDir()`, `os.UserCacheDir()`等を「使わない」と言うことです
             - これらはmacの場合 `~/Library/Application Support` などを返すため
             - デスクトップアプリケーションであればそれで良いが、CLIツールでは `XDG` に寄せた方が分かりやすいと考えます
     - windowsでは、 `os.UserConfigDir()` 及び `os.UserCacheDir()` を使用します
