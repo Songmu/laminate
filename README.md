@@ -24,13 +24,6 @@ A command-line bridge tool that orchestrates external image generation commands 
 4. **Output**: Returns the generated image data to stdout
 5. **Caching**: Optionally caches results to avoid re-executing expensive commands
 
-## Features
-
-- 🔗 **Bridge Tool**: Routes text to external image generation tools
-- ⚙️ **Pattern Matching**: YAML configuration with glob patterns and brace expansions  
-- 🚀 **Smart Caching**: Avoids re-running expensive commands
-- 📦 **Flexible I/O**: Template variables for different command interfaces
-
 ## Synopsis
 
 ```bash
