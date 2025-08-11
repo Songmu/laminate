@@ -1,7 +1,7 @@
 laminate
 ========
 
-[![Test Status](https://github.com/Songmu/laminate/workflows/test/badge.svg?branch=main)][actions]
+[![Test Status](https://github.com/Songmu/laminate/workflows/test.yaml/badge.svg?branch=main)][actions]
 [![Coverage Status](https://codecov.io/gh/Songmu/laminate/branch/main/graph/badge.svg)][codecov]
 [![MIT License](https://img.shields.io/github/license/Songmu/laminate)][license]
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/Songmu/laminate)][PkgGoDev]
@@ -24,13 +24,6 @@ A command-line bridge tool that orchestrates external image generation commands 
 4. **Output**: Returns the generated image data to stdout
 5. **Caching**: Optionally caches results to avoid re-executing expensive commands
 
-## Features
-
-- 🔗 **Bridge Tool**: Routes text to external image generation tools
-- ⚙️ **Pattern Matching**: YAML configuration with glob patterns and brace expansions  
-- 🚀 **Smart Caching**: Avoids re-running expensive commands
-- 📦 **Flexible I/O**: Template variables for different command interfaces
-
 ## Synopsis
 
 ```bash
@@ -48,7 +41,7 @@ cat script.py | laminate > python_code.png
 echo "Hello World" | laminate --lang unknown > text.png
 
 # Integration with k1LoW/deck for slide generation
-deck apply -c laminate deck.md
+deck apply -c laminate deck.md  # deck sets CODEBLOCK_LANG automatically
 ```
 
 > [!TIP]
@@ -58,6 +51,8 @@ deck apply -c laminate deck.md
 
 > [!IMPORTANT]
 > You need to install the actual image generation tools that you want to use. `laminate` will fail if the required external commands are not available in your PATH.
+
+The following are just examples of popular tools. You can use any command-line tool that can generate images - the choice is entirely up to you and your specific needs.
 
 ```bash
 # For QR codes
@@ -77,6 +72,9 @@ apt-get install imagemagick    # Ubuntu/Debian
 
 ## Installation
 
+<details>
+<summary>Click to expand installation methods</summary>
+
 ```console
 # Install via Homebrew (macOS)
 % brew install songmu/tap/laminate
@@ -93,6 +91,8 @@ apt-get install imagemagick    # Ubuntu/Debian
 # go install
 % go install github.com/Songmu/laminate/cmd/laminate@latest
 ```
+
+</details>
 
 ## Configuration
 
@@ -123,27 +123,26 @@ commands:
   - **`ext`**: Output file extension (default: `png`)
   - **`shell`**: Shell to use for string commands (default: `bash` or `sh`)
 
-### Command Execution Behavior
-
-The presence or absence of template variables in the `run` command determines how input and output are handled:
-
-| `{{input}}` | `{{output}}` | Input Method | Output Method | Example |
-|-------------|--------------|--------------|---------------|---------|
-| ✅ Present  | ✅ Present   | Command argument | File → stdout | `qrencode -o "{{output}}" "{{input}}"` |
-| ❌ Absent   | ✅ Present   | Stdin | File → stdout | `mmdc -i - -o "{{output}}"` |
-| ✅ Present  | ❌ Absent    | Command argument | Command stdout | `convert label:"{{input}}" png:-` |
-| ❌ Absent   | ❌ Absent    | Stdin | Command stdout | `some-converter` |
-
 ### Template Variables
 
+You can use these variables in your commands as needed. The presence or absence of `{{input}}` and `{{output}}` determines how laminate handles I/O with the external command.
+
 - **`{{input}}`**: Input text from stdin
-  - If this variable is present in the command, the input text will be passed as a command-line argument
-  - If this variable is NOT present, the input text will be passed via stdin to the command
-- **`{{output}}`**: Output file path (with appropriate extension)
-  - If this variable is present, the command should write the image to this file path
-  - If this variable is NOT present, the command should write the image data to stdout
-  - The file extension is determined by the `ext` field (defaults to `png`)
-- **`{{lang}}`**: Specified language parameter
+  - Present: Input passed as command-line argument
+  - Absent: Input passed via stdin to the command
+- **`{{output}}`**: Output file path with extension from `ext` field (default: `png`)
+  - Present: Command writes to this file, laminate reads it
+  - Absent: Command writes to stdout, laminate captures it
+- **`{{lang}}`**: The language parameter specified by user
+
+**I/O Behavior Examples:**
+
+| Variables Used | Example Command | How it works |
+|---------------|-----------------|--------------|
+| Both | `qrencode -o "{{output}}" "{{input}}"` | Input as arg, output to file |
+| Output only | `mmdc -i - -o "{{output}}"` | Input via stdin, output to file |
+| Input only | `convert label:"{{input}}" png:-` | Input as arg, output to stdout |
+| Neither | `some-converter` | Input via stdin, output to stdout |
 
 ### Language Matching
 
@@ -170,6 +169,22 @@ For language `python`: matches the 2nd command (`{py,python}`) and stops there.
 
 > [!TIP]
 > Put more specific patterns at the top and general patterns (like `*`) at the bottom to ensure proper matching priority.
+
+## Environment Variables
+
+- `CODEBLOCK_LANG`: Language specification via environment variable (automatically set by [k1LoW/deck](https://github.com/k1LoW/deck))
+
+## Cache Management
+
+Cache files are stored in `~/.cache/laminate/cache/` and keyed by input content + language + format.
+
+```yaml
+# Set cache duration
+cache: 2h
+
+# Disable caching (omit cache field)
+# cache: 0s
+```
 
 ## Usage Examples
 
@@ -233,7 +248,7 @@ echo "https://example.com" | laminate --lang qr > qr.png
 
 #### Code Syntax Highlighting
 ```bash
-# Using --lang flag
+# Using --lang flag (highest priority)
 cat main.go | laminate --lang go > code.png
 
 # Using environment variable
@@ -244,6 +259,9 @@ cat script.py | laminate > highlighted.png
 cat README.md | laminate --lang "" > readme.png
 ```
 
+> [!NOTE]
+> Priority: `--lang` flag > `CODEBLOCK_LANG` environment variable > empty string
+
 #### Mermaid Diagrams
 ```bash
 cat << EOF | laminate --lang mermaid > diagram.png
@@ -253,26 +271,6 @@ graph TD
 EOF
 ```
 
-### Language Priority
-
-- `--lang` flag > `CODEBLOCK_LANG` environment variable > empty string
-- Pattern matching is first-match-wins from top to bottom in config
-
-## Cache Management
-
-Cache files are stored in `~/.cache/laminate/cache/` and keyed by input content + language + format.
-
-```yaml
-# Set cache duration
-cache: 2h
-
-# Disable caching (omit cache field)
-# cache: 0s
-```
-
-## Environment Variables
-
-- `CODEBLOCK_LANG`: Default language when `--lang` is not specified
 
 ## Author
 
