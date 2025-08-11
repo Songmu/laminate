@@ -52,6 +52,8 @@ deck apply -c laminate deck.md
 > [!IMPORTANT]
 > You need to install the actual image generation tools that you want to use. `laminate` will fail if the required external commands are not available in your PATH.
 
+The following are just examples of popular tools. You can use any command-line tool that can generate images - the choice is entirely up to you and your specific needs.
+
 ```bash
 # For QR codes
 brew install qrencode          # macOS
