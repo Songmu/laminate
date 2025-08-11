@@ -181,9 +181,7 @@ func TestLoadConfig_FileNotExists(t *testing.T) {
 
 	if config == nil {
 		t.Error("Expected empty config, got nil")
-	}
-
-	if len(config.Commands) != 0 {
+	} else if len(config.Commands) != 0 {
 		t.Error("Expected empty commands")
 	}
 }

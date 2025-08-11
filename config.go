@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/spf13/pathologize"
 )
 
 // Config represents the configuration for laminate
@@ -79,7 +80,7 @@ func (c *Config) ParseDuration() (time.Duration, error) {
 // GetExt returns the file extension for the output
 func (cmd *Command) GetExt() string {
 	if cmd.Ext != "" {
-		return cmd.Ext
+		return pathologize.Clean(cmd.Ext)
 	}
 	return "png"
 }
