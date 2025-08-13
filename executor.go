@@ -84,12 +84,7 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 	}
 	ext := cmd.GetExt()
 
-	duration, err := config.ParseDuration()
-	if err != nil {
-		return fmt.Errorf("failed to parse cache duration: %w", err)
-	}
-
-	cache := NewCache(duration)
+	cache := NewCache(config.Cache)
 	if data, found := cache.Get(lang, input, ext); found {
 		_, err := output.Write(data)
 		return err

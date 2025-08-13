@@ -9,41 +9,6 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-func TestConfig_ParseDuration(t *testing.T) {
-	tests := []struct {
-		name     string
-		cache    string
-		expected time.Duration
-		hasError bool
-	}{
-		{"empty", "", 0, false},
-		{"1h", "1h", time.Hour, false},
-		{"30m", "30m", 30 * time.Minute, false},
-		{"15s", "15s", 15 * time.Second, false},
-		{"invalid", "invalid", 0, true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config := &Config{Cache: tt.cache}
-			duration, err := config.ParseDuration()
-
-			if tt.hasError {
-				if err == nil {
-					t.Error("Expected error, got nil")
-				}
-			} else {
-				if err != nil {
-					t.Errorf("Unexpected error: %v", err)
-				}
-				if duration != tt.expected {
-					t.Errorf("Expected %v, got %v", tt.expected, duration)
-				}
-			}
-		})
-	}
-}
-
 func TestCommand_GetExt(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -123,18 +88,6 @@ func TestRunCommand_UnmarshalYAML_WithActualYAML(t *testing.T) {
 	}
 }
 
-func setupEnvVar(key, value string) func() {
-	oldValue := os.Getenv(key)
-	os.Setenv(key, value)
-	return func() {
-		if oldValue != "" {
-			os.Setenv(key, oldValue)
-		} else {
-			os.Unsetenv(key)
-		}
-	}
-}
-
 func TestPathOverride(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -158,8 +111,7 @@ func TestPathOverride(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cleanup := setupEnvVar(tt.envVar, tt.envValue)
-			defer cleanup()
+			t.Setenv(tt.envVar, tt.envValue)
 
 			result := tt.getFunc()
 			if result != tt.envValue {
@@ -169,12 +121,19 @@ func TestPathOverride(t *testing.T) {
 	}
 }
 
+func mustParseDuration(value string) time.Duration {
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		panic("Invalid duration: " + value)
+	}
+	return d
+}
+
 func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupConfig    bool
 		configContent  string
-		expectedCache  string
+		expectedCache  time.Duration
 		expectedCmdLen int
 		expectedLang   string
 		expectedExt    string
@@ -182,32 +141,38 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			name:           "file_not_exists",
-			setupConfig:    false,
 			expectedCmdLen: 0,
-			expectError:    false,
+			expectError:    true,
 		},
 		{
-			name:        "valid_file",
-			setupConfig: true,
+			name: "valid_file",
 			configContent: `cache: 1h
 commands:
 - lang: test
   run: echo test
   ext: png
 `,
-			expectedCache:  "1h",
+			expectedCache:  mustParseDuration("1h"),
 			expectedCmdLen: 1,
 			expectedLang:   "test",
 			expectedExt:    "png",
-			expectError:    false,
+		},
+		{
+			name: "valid_file_without_cache",
+			configContent: `commands:
+- lang: test
+  run: echo test
+  ext: png
+`,
+			expectedCmdLen: 1,
+			expectedLang:   "test",
+			expectedExt:    "png",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var cleanup func()
-
-			if tt.setupConfig {
+			if tt.configContent != "" {
 				tmpDir := t.TempDir()
 				configFile := filepath.Join(tmpDir, "config.yaml")
 
@@ -215,12 +180,10 @@ commands:
 				if err != nil {
 					t.Fatalf("Failed to create test config: %v", err)
 				}
-
-				cleanup = setupEnvVar("LAMINATE_CONFIG_PATH", configFile)
+				t.Setenv("LAMINATE_CONFIG_PATH", configFile)
 			} else {
-				cleanup = setupEnvVar("LAMINATE_CONFIG_PATH", "/non/existent/config.yaml")
+				t.Setenv("LAMINATE_CONFIG_PATH", "/non/existent/config.yaml")
 			}
-			defer cleanup()
 
 			config, err := LoadConfig()
 
@@ -240,7 +203,7 @@ commands:
 				return
 			}
 
-			if tt.expectedCache != "" && config.Cache != tt.expectedCache {
+			if config.Cache != tt.expectedCache {
 				t.Errorf("Expected cache '%s', got '%s'", tt.expectedCache, config.Cache)
 			}
 
