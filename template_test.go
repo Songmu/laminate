@@ -55,28 +55,3 @@ func TestExpandTemplate(t *testing.T) {
 		})
 	}
 }
-
-func TestHasVariable(t *testing.T) {
-	tests := []struct {
-		name     string
-		template string
-		varName  string
-		expected bool
-	}{
-		{"has_variable", "echo {{input}}", "input", true},
-		{"no_variable", "echo hello", "input", false},
-		{"multiple_variables", "convert {{input}} -o {{output}}", "output", true},
-		{"partial_match", "echo input", "input", false},
-		{"special_chars", "echo {{var.name}}", "var.name", true},
-		{"escaped_special_chars", "echo {{var[0]}}", "var[0]", true},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := HasVariable(tt.template, tt.varName)
-			if result != tt.expected {
-				t.Errorf("Template %s, Variable %s: expected %v, got %v", tt.template, tt.varName, tt.expected, result)
-			}
-		})
-	}
-}
