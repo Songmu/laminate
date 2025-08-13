@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.3](https://github.com/Songmu/laminate/compare/v0.0.2...v0.0.3) - 2025-08-13
+- chore: use type time.Duration directly for Config.Cache by @Songmu in https://github.com/Songmu/laminate/pull/7
+- chore: update testing for cache by @Songmu in https://github.com/Songmu/laminate/pull/9
+
 ## [v0.0.2](https://github.com/Songmu/laminate/compare/v0.0.1...v0.0.2) - 2025-08-13
 - chore: remove redundant code by @Songmu in https://github.com/Songmu/laminate/pull/3
 - chore: clenup again by @Songmu in https://github.com/Songmu/laminate/pull/4
