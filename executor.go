@@ -75,14 +75,15 @@ func (e *Executor) exceute(ctx context.Context, argv []string) ([]byte, error) {
 	if !hasInput {
 		cmd.Stdin = strings.NewReader(e.input)
 	}
+
+	// to prevent unnecessary output contamination, redirect stdout to stderr by deafult
+	cmd.Stdout = os.Stderr
+
 	// Set up output handling
 	var outputBuffer bytes.Buffer
 	if !hasOutput {
-		// Command will output to stdout
+		// Command will output to stdout and we capture it
 		cmd.Stdout = &outputBuffer
-	} else {
-		// Command will write to file, we need to read it after
-		cmd.Stdout = os.Stdout
 	}
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("command failed: %w", err)
