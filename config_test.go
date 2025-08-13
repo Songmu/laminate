@@ -17,7 +17,7 @@ func TestCommand_GetExt(t *testing.T) {
 	}{
 		{"default", "", "png"},
 		{"custom", "jpg", "jpg"},
-		{"with_dot", ".gif", ".gif"},
+		{"with_dot", "svg.gz", "svg.gz"},
 	}
 
 	for _, tt := range tests {

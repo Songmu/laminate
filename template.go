@@ -16,6 +16,5 @@ func ExpandTemplate(template string, vars map[string]string) (string, error) {
 		}
 		return match
 	})
-
 	return result, nil
 }

@@ -176,7 +176,7 @@ For language `python`: matches the 2nd command (`{py,python}`) and stops there.
 
 ## Cache Management
 
-Cache files are stored in `~/.cache/laminate/cache/` and keyed by input content + language + format.
+Cache files are stored in `${XDG_CACHE_HOME:-~/.cache}/laminate/cache/` and keyed by input content + language + format.
 
 ```yaml
 # Set cache duration
@@ -185,6 +185,8 @@ cache: 2h
 # Disable caching (omit cache field)
 # cache: 0s
 ```
+
+You can clear the cache by deleting the cache directory.
 
 ## Usage Examples
 
@@ -270,7 +272,6 @@ graph TD
     B --> C[End]
 EOF
 ```
-
 
 ## Author
 

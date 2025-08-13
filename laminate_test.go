@@ -3,6 +3,7 @@ package laminate_test
 import (
 	"bytes"
 	"context"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,18 +68,6 @@ func setupStdinWithInput(input string) func() {
 	}
 
 	return func() { os.Stdin = oldStdin }
-}
-
-func setupEnvVar(key, value string) func() {
-	oldValue := os.Getenv(key)
-	os.Setenv(key, value)
-	return func() {
-		if oldValue != "" {
-			os.Setenv(key, oldValue)
-		} else {
-			os.Unsetenv(key)
-		}
-	}
 }
 
 func assertImageFormat(t *testing.T, output []byte, format string) {
@@ -243,14 +232,9 @@ func TestRun_ImageGeneration(t *testing.T) {
 			createTestConfigFromFile(t, configPath, tt.configType)
 
 			// Set environment variable if specified
-			if tt.envLang != "" {
-				cleanupEnv := setupEnvVar("CODEBLOCK_LANG", tt.envLang)
-				defer cleanupEnv()
-			}
+			t.Setenv("CODEBLOCK_LANG", tt.envLang)
 
 			var outBuf, errBuf bytes.Buffer
-
-			// Set stdin
 			cleanupStdin := setupStdinWithInput(tt.input)
 			defer cleanupStdin()
 
@@ -326,14 +310,21 @@ func TestRun_CacheBehavior(t *testing.T) {
 			}
 
 			if tt.expectCache {
-				t.Logf("With cache - First run: %v, Second run: %v", duration1, duration2)
-			} else {
-				t.Logf("No cache - First run: %v, Second run: %v", duration1, duration2)
+				if almostEqual(duration1, duration2, 0.2) {
+					t.Errorf("Expected different durations with cache, got %v and %v", duration1, duration2)
+				}
+			} else if !almostEqual(duration1, duration2, 0.2) {
+				t.Errorf("Expected similar durations without cache, got %v and %v", duration1, duration2)
 			}
-
 			// Verify outputs are valid images
 			assertImageFormat(t, outBuf1.Bytes(), "png")
 			assertImageFormat(t, outBuf2.Bytes(), "png")
 		})
 	}
+}
+
+func almostEqual(a, b time.Duration, relTol float64) bool {
+	aa := float64(a)
+	bb := float64(b)
+	return math.Abs(aa-bb) <= relTol*math.Max(aa, bb)
 }
