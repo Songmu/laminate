@@ -142,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name:           "file_not_exists",
 			expectedCmdLen: 0,
-			expectError:    false,
+			expectError:    true,
 		},
 		{
 			name: "valid_file",
@@ -156,7 +156,6 @@ commands:
 			expectedCmdLen: 1,
 			expectedLang:   "test",
 			expectedExt:    "png",
-			expectError:    false,
 		},
 		{
 			name: "valid_file_without_cache",
@@ -168,7 +167,6 @@ commands:
 			expectedCmdLen: 1,
 			expectedLang:   "test",
 			expectedExt:    "png",
-			expectError:    false,
 		},
 	}
 
@@ -182,7 +180,6 @@ commands:
 				if err != nil {
 					t.Fatalf("Failed to create test config: %v", err)
 				}
-				defer os.RemoveAll(tmpDir)
 				t.Setenv("LAMINATE_CONFIG_PATH", configFile)
 			} else {
 				t.Setenv("LAMINATE_CONFIG_PATH", "/non/existent/config.yaml")

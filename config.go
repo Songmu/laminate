@@ -96,11 +96,6 @@ func (cmd *Command) GetShell() string {
 func LoadConfig() (*Config, error) {
 	configPath := getConfigPath()
 
-	// If config file doesn't exist, return empty config
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		return &Config{}, nil
-	}
-
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)

@@ -12,7 +12,7 @@ import (
 	"github.com/Songmu/laminate"
 )
 
-func setupTestEnv(t *testing.T) (configPath, cachePath string, cleanup func()) {
+func setupTestEnv(t *testing.T) (configPath, cachePath string) {
 	t.Helper()
 
 	// Create temporary directories
@@ -20,27 +20,10 @@ func setupTestEnv(t *testing.T) (configPath, cachePath string, cleanup func()) {
 	configPath = filepath.Join(tmpDir, "config.yaml")
 	cachePath = filepath.Join(tmpDir, "cache")
 
-	// Set environment variables
-	oldConfigPath := os.Getenv("LAMINATE_CONFIG_PATH")
-	oldCachePath := os.Getenv("LAMINATE_CACHE_PATH")
+	t.Setenv("LAMINATE_CONFIG_PATH", configPath)
+	t.Setenv("LAMINATE_CACHE_PATH", cachePath)
 
-	os.Setenv("LAMINATE_CONFIG_PATH", configPath)
-	os.Setenv("LAMINATE_CACHE_PATH", cachePath)
-
-	cleanup = func() {
-		if oldConfigPath != "" {
-			os.Setenv("LAMINATE_CONFIG_PATH", oldConfigPath)
-		} else {
-			os.Unsetenv("LAMINATE_CONFIG_PATH")
-		}
-		if oldCachePath != "" {
-			os.Setenv("LAMINATE_CACHE_PATH", oldCachePath)
-		} else {
-			os.Unsetenv("LAMINATE_CACHE_PATH")
-		}
-	}
-
-	return configPath, cachePath, cleanup
+	return configPath, cachePath
 }
 
 func createTestConfigFromFile(t *testing.T, configPath, configType string) {
@@ -146,7 +129,7 @@ func TestRun_ErrorCases(t *testing.T) {
 			setupConfig:    false,
 			args:           []string{"--lang", "test"},
 			input:          "test input",
-			expectedErrMsg: "no commands configured",
+			expectedErrMsg: "failed to read config file",
 		},
 		{
 			name:           "no_input_provided",
@@ -159,8 +142,7 @@ func TestRun_ErrorCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configPath, _, cleanup := setupTestEnv(t)
-			defer cleanup()
+			configPath, _ := setupTestEnv(t)
 
 			if tt.setupConfig {
 				createTestConfigFromFile(t, configPath, "default")
@@ -174,7 +156,8 @@ func TestRun_ErrorCases(t *testing.T) {
 
 			err := laminate.Run(context.Background(), tt.args, &outBuf, &errBuf)
 			if err == nil {
-				t.Errorf("Expected error, got nil")
+				t.Errorf("Expected error, got nil: %s", tt.name)
+				return
 			}
 
 			if !strings.Contains(err.Error(), tt.expectedErrMsg) {
@@ -255,8 +238,7 @@ func TestRun_ImageGeneration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configPath, _, cleanup := setupTestEnv(t)
-			defer cleanup()
+			configPath, _ := setupTestEnv(t)
 
 			createTestConfigFromFile(t, configPath, tt.configType)
 
@@ -306,8 +288,7 @@ func TestRun_CacheBehavior(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			configPath, _, cleanup := setupTestEnv(t)
-			defer cleanup()
+			configPath, _ := setupTestEnv(t)
 
 			createTestConfigFromFile(t, configPath, tt.configType)
 
