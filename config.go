@@ -14,8 +14,8 @@ import (
 
 // Config represents the configuration for laminate
 type Config struct {
-	Cache    string    `yaml:"cache"`
-	Commands []Command `yaml:"commands"`
+	Cache    time.Duration `yaml:"cache"`
+	Commands []Command     `yaml:"commands"`
 }
 
 // RunCommand represents a command that can be either a string or []string
@@ -67,14 +67,6 @@ type Command struct {
 	Run   RunCommand `yaml:"run"`
 	Ext   string     `yaml:"ext"`
 	Shell string     `yaml:"shell"`
-}
-
-// ParseDuration parses cache duration string like "1h", "30m", "15s"
-func (c *Config) ParseDuration() (time.Duration, error) {
-	if c.Cache == "" {
-		return 0, nil
-	}
-	return time.ParseDuration(c.Cache)
 }
 
 // GetExt returns the file extension for the output
