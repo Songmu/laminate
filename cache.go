@@ -29,7 +29,6 @@ func (c *Cache) Get(lang, input, ext string) ([]byte, bool) {
 	if c.duration == 0 {
 		return nil, false
 	}
-
 	cachePath := c.getCacheFilePath(lang, input, ext)
 
 	// Check if cache file exists
@@ -48,7 +47,6 @@ func (c *Cache) Get(lang, input, ext string) ([]byte, bool) {
 	if err != nil {
 		return nil, false
 	}
-
 	return data, true
 }
 
@@ -57,20 +55,17 @@ func (c *Cache) Set(lang, input, ext string, data []byte) error {
 	if c.duration == 0 {
 		return nil
 	}
-
 	cachePath := c.getCacheFilePath(lang, input, ext)
 
 	// Create cache directory if it doesn't exist
 	dir := filepath.Dir(cachePath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return fmt.Errorf("failed to create cache directory: %w", err)
 	}
-
 	// Write cache file
-	if err := os.WriteFile(cachePath, data, 0644); err != nil {
+	if err := os.WriteFile(cachePath, data, 0600); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
-
 	return nil
 }
 
@@ -92,20 +87,15 @@ func (c *Cache) Clean() error {
 	if c.duration == 0 {
 		return nil
 	}
-
 	now := time.Now()
-
 	err := filepath.Walk(c.dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // Skip errors
 		}
-
 		if !info.IsDir() && now.Sub(info.ModTime()) > c.duration {
 			os.Remove(path) // Ignore errors
 		}
-
 		return nil
 	})
-
 	return err
 }
