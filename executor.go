@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
+	"path/filepath"
 	"strings"
 
 	"github.com/k1LoW/exec"
@@ -56,54 +56,24 @@ func (e *Executor) getArgv() ([]string, error) {
 }
 
 func (e *Executor) exceute(ctx context.Context, argv []string) ([]byte, error) {
-	var rawCmd = e.cmd.Run.Array()
-	if !e.cmd.Run.IsArray() {
-		rawCmd = []string{e.cmd.Run.String()}
-	}
-
-	hasInput := slices.ContainsFunc(rawCmd, func(arg string) bool {
-		return HasVariable(arg, "input")
-	})
-	hasOutput := slices.ContainsFunc(rawCmd, func(arg string) bool {
-		return HasVariable(arg, "output")
-	})
-
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Stderr = os.Stderr
-
-	// Set up stdin if {{input}} is not in the command
-	if !hasInput {
-		cmd.Stdin = strings.NewReader(e.input)
-	}
-	// Set up output handling
-	var outputBuffer bytes.Buffer
-	if !hasOutput {
-		// Command will output to stdout
-		cmd.Stdout = &outputBuffer
-	} else {
-		// Command will write to file, we need to read it after
-		cmd.Stdout = os.Stdout
-	}
+	cmd.Stdin = strings.NewReader(e.input)
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
 	if err := cmd.Run(); err != nil {
 		return nil, fmt.Errorf("command failed: %w", err)
 	}
 
-	if !hasOutput {
-		// Output was written to stdout
-		return outputBuffer.Bytes(), nil
+	// If the result is written to a temporary file, read it from that file.
+	if b, err := os.ReadFile(e.output); err == nil {
+		fmt.Fprint(os.Stderr, buf.String())
+		return b, nil
+	} else if !os.IsNotExist(err) {
+		return nil, fmt.Errorf("failed to read output file: %w\nstdout: %s", err, buf.String())
 	}
-	// Output was written to file, read it
-	return os.ReadFile(e.output)
-}
-
-// createTempFile creates a temporary file for output
-func createTempFile(ext string) (string, error) {
-	tmpFile, err := os.CreateTemp("", fmt.Sprintf("laminate-*%s", ext))
-	if err != nil {
-		return "", err
-	}
-	tmpFile.Close()
-	return tmpFile.Name(), nil
+	// If it does not exist, read the result from stdout.
+	return buf.Bytes(), nil
 }
 
 // ExecuteWithCache executes a command with caching support
@@ -125,17 +95,17 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 		return err
 	}
 
-	outputPath, err := createTempFile("." + ext)
+	tempDir, err := os.MkdirTemp("", "laminate-")
 	if err != nil {
-		return fmt.Errorf("failed to create temp file: %w", err)
+		return fmt.Errorf("failed to create temp directory: %w", err)
 	}
-	defer os.Remove(outputPath)
+	defer os.RemoveAll(tempDir)
 
 	executor := &Executor{
 		cmd:    cmd,
 		lang:   lang,
 		input:  input,
-		output: outputPath,
+		output: filepath.Join(tempDir, "output."+ext),
 	}
 	data, err := executor.Execute(ctx)
 	if err != nil {

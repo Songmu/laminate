@@ -1,7 +1,6 @@
 package laminate
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 )
@@ -19,11 +18,4 @@ func ExpandTemplate(template string, vars map[string]string) (string, error) {
 	})
 
 	return result, nil
-}
-
-// HasVariable checks if a template contains a specific variable
-func HasVariable(template string, varName string) bool {
-	pattern := fmt.Sprintf(`\{\{%s\}\}`, regexp.QuoteMeta(varName))
-	matched, _ := regexp.MatchString(pattern, template)
-	return matched
 }
