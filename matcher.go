@@ -7,14 +7,14 @@ import (
 )
 
 // FindMatchingCommand finds the first command that matches the given language
-func FindMatchingCommand(commands []Command, lang string) (*Command, error) {
+func FindMatchingCommand(commands []*Command, lang string) (*Command, error) {
 	for _, cmd := range commands {
 		matched, err := matchLanguage(cmd.Lang, lang)
 		if err != nil {
 			return nil, fmt.Errorf("failed to match language pattern %q: %w", cmd.Lang, err)
 		}
 		if matched {
-			return &cmd, nil
+			return cmd, nil
 		}
 	}
 	return nil, fmt.Errorf("no matching command found for language: %s", lang)

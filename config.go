@@ -15,7 +15,7 @@ import (
 // Config represents the configuration for laminate
 type Config struct {
 	Cache    time.Duration `yaml:"cache"`
-	Commands []Command     `yaml:"commands"`
+	Commands []*Command    `yaml:"commands"`
 }
 
 // RunCommand represents a command that can be either a string or []string

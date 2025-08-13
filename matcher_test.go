@@ -44,7 +44,7 @@ func TestMatchLanguage(t *testing.T) {
 }
 
 func TestFindMatchingCommand(t *testing.T) {
-	commands := []Command{
+	commands := []*Command{
 		{Lang: "go", Run: RunCommand{str: "cmd1"}, Ext: "png"},
 		{Lang: "{python,py}", Run: RunCommand{str: "cmd2"}, Ext: "jpg"},
 		{Lang: "*", Run: RunCommand{str: "cmd3"}, Ext: "gif"},
