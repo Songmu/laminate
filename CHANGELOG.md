@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.4](https://github.com/Songmu/laminate/compare/v0.0.3...v0.0.4) - 2025-09-05
+- build(deps): bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/Songmu/laminate/pull/10
+- build(deps): bump github.com/k1LoW/exec from 0.3.0 to 0.4.0 by @dependabot[bot] in https://github.com/Songmu/laminate/pull/11
+- feat: respect windows and SHELL var for shell detection by @Songmu in https://github.com/Songmu/laminate/pull/13
+
 ## [v0.0.3](https://github.com/Songmu/laminate/compare/v0.0.2...v0.0.3) - 2025-08-13
 - chore: use type time.Duration directly for Config.Cache by @Songmu in https://github.com/Songmu/laminate/pull/7
 - chore: update testing for cache by @Songmu in https://github.com/Songmu/laminate/pull/9
