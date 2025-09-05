@@ -122,9 +122,6 @@ func (cmd *Command) buildCommand(c string) ([]string, error) {
 	if standaloneCommandReg.MatchString(c) {
 		return []string{c}, nil
 	}
-	if runtime.GOOS == "windows" {
-		return []string{"cmd", "/c", c}, nil
-	}
 	sh, err := cmd.detectShell()
 	if err != nil {
 		return nil, err
@@ -144,6 +141,9 @@ func (cmd *Command) detectShell() (string, error) {
 		if path, err := exec.LookPath(sh); err == nil {
 			return path, nil
 		}
+	}
+	if runtime.GOOS == "windows" {
+		return "cmd", nil
 	}
 	return "", fmt.Errorf("no suitable shell found")
 }
