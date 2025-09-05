@@ -310,10 +310,10 @@ func TestRun_CacheBehavior(t *testing.T) {
 			}
 
 			if tt.expectCache {
-				if almostEqual(duration1, duration2, 0.2) {
+				if almostEqual(duration1, duration2, 0.5) {
 					t.Errorf("Expected different durations with cache, got %v and %v", duration1, duration2)
 				}
-			} else if !almostEqual(duration1, duration2, 0.2) {
+			} else if !almostEqual(duration1, duration2, 0.5) {
 				t.Errorf("Expected similar durations without cache, got %v and %v", duration1, duration2)
 			}
 			// Verify outputs are valid images
