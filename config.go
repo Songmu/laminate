@@ -3,7 +3,6 @@ package laminate
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -75,21 +74,6 @@ func (cmd *Command) GetExt() string {
 		return pathologize.Clean(cmd.Ext)
 	}
 	return "png"
-}
-
-// GetShell returns the shell to use for command execution
-func (cmd *Command) GetShell() string {
-	if cmd.Shell != "" {
-		return cmd.Shell
-	}
-	if path, err := exec.LookPath("bash"); err == nil {
-		return path
-	}
-	// Fallback to sh
-	if path, err := exec.LookPath("sh"); err == nil {
-		return path
-	}
-	return "/bin/sh"
 }
 
 // LoadConfig loads the configuration from the config file

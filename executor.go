@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/k1LoW/exec"
@@ -51,8 +53,7 @@ func (e *Executor) getArgv() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	shell := e.cmd.GetShell()
-	return []string{shell, "-c", expanded}, nil
+	return e.cmd.buildCommand(expanded)
 }
 
 func (e *Executor) exceute(ctx context.Context, argv []string) ([]byte, error) {
@@ -113,4 +114,36 @@ func ExecuteWithCache(ctx context.Context, config *Config, lang, input string, o
 	}
 	_, err = output.Write(data)
 	return err
+}
+
+var standaloneCommandReg = regexp.MustCompile(`^[-_.+a-zA-Z0-9]+$`)
+
+func (cmd *Command) buildCommand(c string) ([]string, error) {
+	if standaloneCommandReg.MatchString(c) {
+		return []string{c}, nil
+	}
+	sh, err := cmd.detectShell()
+	if err != nil {
+		return nil, err
+	}
+	return []string{sh, "-c", c}, nil
+}
+
+// detectShell returns the shell to use for command execution
+func (cmd *Command) detectShell() (string, error) {
+	if cmd.Shell != "" {
+		return cmd.Shell, nil
+	}
+	if sh := os.Getenv("SHELL"); sh != "" {
+		return sh, nil
+	}
+	for _, sh := range []string{"bash", "sh"} {
+		if path, err := exec.LookPath(sh); err == nil {
+			return path, nil
+		}
+	}
+	if runtime.GOOS == "windows" {
+		return "cmd", nil
+	}
+	return "", fmt.Errorf("no suitable shell found")
 }
