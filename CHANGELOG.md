@@ -1,5 +1,7 @@
 # Changelog
 
+## [v0.0.5](https://github.com/Songmu/laminate/compare/v0.0.4...v0.0.5) - 2025-09-05
+
 ## [v0.0.4](https://github.com/Songmu/laminate/compare/v0.0.3...v0.0.4) - 2025-09-05
 - build(deps): bump actions/checkout from 4 to 5 by @dependabot[bot] in https://github.com/Songmu/laminate/pull/10
 - build(deps): bump github.com/k1LoW/exec from 0.3.0 to 0.4.0 by @dependabot[bot] in https://github.com/Songmu/laminate/pull/11
